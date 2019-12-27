@@ -1,0 +1,10 @@
+# Visual Studio Code
+.vscode
+
+# Python
+__pycache__
+Pipfile.lock
+
+# Internal files
+typeracer.db
+output
