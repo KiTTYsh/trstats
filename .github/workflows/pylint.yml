@@ -3,6 +3,8 @@ on: [push]
 
 jobs:
   pylint:
+    name: Pylint
+    runs-on: ubuntu-latest
     steps:
     - name: Python Pylint Github Action
       uses: fylein/python-pylint-github-action@v4
