@@ -1,0 +1,10 @@
+name: Pylint
+on: [push]
+
+jobs:
+  pylint:
+    steps:
+    - name: Python Pylint Github Action
+      uses: fylein/python-pylint-github-action@v4
+      with:
+        args: pip3 install -r requirements.txt && pylint stats.py
