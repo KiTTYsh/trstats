@@ -6,6 +6,8 @@ jobs:
     name: Pylint
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2.0.0
     - name: Python Pylint Github Action
       uses: fylein/python-pylint-github-action@v4
       with:
