@@ -399,19 +399,29 @@ def db_put_user(user, dbh):
 def db_get_user(username, dbh):
     ''' Retrieve a user from the database '''
     dbc = dbh.cursor()
-    dbr = dbc.execute('SELECT * FROM users WHERE username=?',
+    dbr = dbc.execute('SELECT '
+                      '  username, '   # 0
+                      '  avgwpm, '     # 1
+                      '  favgwpm, '    # 2
+                      '  bestwpm, '    # 3
+                      '  races, '      # 4
+                      '  percentile, ' # 5
+                      '  skill, '      # 6
+                      '  experience, ' # 7
+                      '  signup '      # 8
+                      'FROM users WHERE username=?',
                       [username]).fetchall()
     if dbr:
         data = dict()
-        data['username'] = dbr[0][1]
-        data['avgwpm'] = dbr[0][2]
-        data['favgwpm'] = dbr[0][3]
-        data['bestwpm'] = dbr[0][4]
-        data['races'] = dbr[0][5]
-        data['percentile'] = dbr[0][6]
-        data['skill'] = dbr[0][7]
-        data['experience'] = json.loads(dbr[0][8])
-        data['signup'] = dbr[0][9]
+        data['username'] = dbr[0][0]
+        data['avgwpm'] = dbr[0][1]
+        data['favgwpm'] = dbr[0][2]
+        data['bestwpm'] = dbr[0][3]
+        data['races'] = dbr[0][4]
+        data['percentile'] = dbr[0][5]
+        data['skill'] = dbr[0][6]
+        data['experience'] = json.loads(dbr[0][7])
+        data['signup'] = dbr[0][8]
         return data
     return False
 
@@ -446,20 +456,32 @@ def db_get_race(user, raceid, dbh):
         dictionary -- Details for the requested race
     """
     dbc = dbh.cursor()
-    dbr = dbc.execute('SELECT * FROM races WHERE username=? AND race=?',
+    dbr = dbc.execute('SELECT '
+                      '  username, '  # 0
+                      '  race, '      # 1
+                      '  date, '      # 2
+                      '  speed, '     # 3
+                      '  accuracy, '  # 4
+                      '  rank, '      # 5
+                      '  players, '   # 6
+                      '  opponents, ' # 7
+                      '  text, '      # 8
+                      '  typelog '    # 9
+                      'FROM races '
+                      'WHERE username=? AND race=?',
                       [user['username'], raceid]).fetchall()
     if dbr:
         data = dict()
-        data['username'] = dbr[0][1]
-        data['race'] = dbr[0][2]
-        data['date'] = datetime.strptime(dbr[0][3], '%Y-%m-%d %H:%M:%S%z')
-        data['speed'] = dbr[0][4]
-        data['accuracy'] = dbr[0][5]
-        data['rank'] = dbr[0][6]
-        data['players'] = dbr[0][7]
-        data['opponents'] = json.loads(dbr[0][8])
-        data['text'] = dbr[0][9]
-        data['typelog'] = dbr[0][10]
+        data['username'] = dbr[0][0]
+        data['race'] = dbr[0][1]
+        data['date'] = datetime.strptime(dbr[0][2], '%Y-%m-%d %H:%M:%S%z')
+        data['speed'] = dbr[0][3]
+        data['accuracy'] = dbr[0][4]
+        data['rank'] = dbr[0][5]
+        data['players'] = dbr[0][6]
+        data['opponents'] = json.loads(dbr[0][7])
+        data['text'] = dbr[0][8]
+        data['typelog'] = dbr[0][9]
         return data
     return False
 
