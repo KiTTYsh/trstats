@@ -1,0 +1,24 @@
+name: Build Windows Binary
+on: [push]
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.0.0
+    - name: Build Windows Binary
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install virtualenv
+        python -m venv env
+        .\env\Scripts\activate
+        python -m pip install -r requirements.txt
+        python -m pip install pyinstaller
+        pyinstaller --onefile stats.py
+    - name: Archive binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: stats.exe
+        path: dist/stats.exe
