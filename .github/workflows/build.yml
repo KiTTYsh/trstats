@@ -21,6 +21,8 @@ jobs:
         python -m venv env
         echo Activate Virtualenv
         .\env\Scripts\activate
+        echo "Upgrade Pip Again"
+        python -m pip install --upgrade pip
         echo Install Requirements
         python -m pip install -r requirements.txt
         echo Install Pyinstaller
