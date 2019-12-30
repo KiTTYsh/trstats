@@ -6,16 +6,26 @@ jobs:
     name: Build
     runs-on: windows-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2.0.0
+    - uses: actions/checkout@v2.0.0
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.7'
+        architecture: 'x64'
     - name: Build Windows Binary
       run: |
+        echo Upgrade Pip
         python -m pip install --upgrade pip
+        echo Install Virtualenv
         python -m pip install virtualenv
+        echo Create Virtualenv
         python -m venv env
+        echo Activate Virtualenv
         .\env\Scripts\activate
+        echo Install Requirements
         python -m pip install -r requirements.txt
+        echo Install Pyinstaller
         python -m pip install pyinstaller
+        echo Run Pyinstaller
         pyinstaller --onefile stats.py
     - name: Archive binary
       uses: actions/upload-artifact@v1
