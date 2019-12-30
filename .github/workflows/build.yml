@@ -28,7 +28,7 @@ jobs:
         echo "Install Pyinstaller"
         python -m pip install pyinstaller
         echo "Run Pyinstaller"
-        pyinstaller --onefile stats.py
+        pyinstaller --onefile stats.py 2>&1
     - name: Archive binary
       uses: actions/upload-artifact@v1
       with:
