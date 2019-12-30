@@ -4,7 +4,7 @@ on: [push]
 jobs:
   build:
     name: Build
-    runs-on: windows-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2.0.0
     - uses: actions/setup-python@v1
@@ -28,7 +28,7 @@ jobs:
         echo "Install Pyinstaller"
         python -m pip install pyinstaller
         echo "Run Pyinstaller"
-        pyinstaller --log-level=TRACE --onefile stats.py
+        pyinstaller --onefile stats.py
     - name: Archive binary
       uses: actions/upload-artifact@v1
       with:
