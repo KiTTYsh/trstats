@@ -4,13 +4,13 @@ on: [push]
 jobs:
   build:
     name: Build
-    runs-on: self-hosted
+    runs-on: windws-latest
     steps:
     - uses: actions/checkout@v2.0.0
-    #- uses: actions/setup-python@v1
-    #  with:
-    #    python-version: '3.7'
-    #    architecture: 'x64'
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.7'
+        architecture: 'x64'
     - name: Build Windows Binary
       run: |
         echo "Upgrade Pip"
@@ -32,5 +32,5 @@ jobs:
     - name: Archive binary
       uses: actions/upload-artifact@v1
       with:
-        name: stats.exe
+        name: Windows Binary
         path: dist/stats.exe
