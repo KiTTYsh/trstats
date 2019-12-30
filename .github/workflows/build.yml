@@ -12,6 +12,7 @@ jobs:
         python-version: '3.7'
         architecture: 'x64'
     - name: Build Windows Binary
+      shell: cmd
       run: |
         echo Upgrade Pip
         python -m pip install --upgrade pip
