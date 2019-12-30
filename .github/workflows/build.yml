@@ -12,7 +12,6 @@ jobs:
         python-version: '3.7'
         architecture: 'x64'
     - name: Build Windows Binary
-      shell: cmd
       run: |
         echo Upgrade Pip
         python -m pip install --upgrade pip
@@ -29,7 +28,7 @@ jobs:
         echo Install Pyinstaller
         python -m pip install pyinstaller
         echo Run Pyinstaller
-        pyinstaller --onefile stats.py
+        pyinstaller --log-level=TRACE --onefile stats.py
     - name: Archive binary
       uses: actions/upload-artifact@v1
       with:
