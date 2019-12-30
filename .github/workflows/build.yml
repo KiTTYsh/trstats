@@ -7,10 +7,10 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v2.0.0
-    - uses: actions/setup-python@v1
-      with:
-        python-version: '3.7'
-        architecture: 'x64'
+    #- uses: actions/setup-python@v1
+    #  with:
+    #    python-version: '3.7'
+    #    architecture: 'x64'
     - name: Build Windows Binary
       run: |
         echo "Upgrade Pip"
