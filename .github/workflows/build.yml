@@ -13,21 +13,21 @@ jobs:
         architecture: 'x64'
     - name: Build Windows Binary
       run: |
-        echo Upgrade Pip
+        echo "Upgrade Pip"
         python -m pip install --upgrade pip
-        echo Install Virtualenv
+        echo "Install Virtualenv"
         python -m pip install virtualenv
-        echo Create Virtualenv
+        echo "Create Virtualenv"
         python -m venv env
-        echo Activate Virtualenv
-        .\env\Scripts\activate
+        echo "Activate Virtualenv"
+        .\env\Scripts\activate.ps1
         echo "Upgrade Pip Again"
         python -m pip install --upgrade pip
-        echo Install Requirements
+        echo "Install Requirements"
         python -m pip install -r requirements.txt
-        echo Install Pyinstaller
+        echo "Install Pyinstaller"
         python -m pip install pyinstaller
-        echo Run Pyinstaller
+        echo "Run Pyinstaller"
         pyinstaller --log-level=TRACE --onefile stats.py
     - name: Archive binary
       uses: actions/upload-artifact@v1
