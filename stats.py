@@ -244,6 +244,146 @@ def get_race(user, race_id, session=None):
     return data
 
 
+def create_table(table, columns, indices, dbh, rebuild=False):
+    ''' Create or update a single table in the database. '''
+
+    def create_full_table(table, columns, dbc):
+        ''' Create a table with the specified schema from scratch. '''
+        print(f'DB: Creating \'{table}\' table')
+        query = f'CREATE TABLE "{table}" ( '
+        for column in columns:
+            query += f'"{column[0]}" {column[1]}'
+            if column[2]: # Not Null
+                query += ' NOT NULL'
+            if column[3] is not None: # Default
+                if isinstance(column[3], int) or isinstance(column[3], float):
+                    query += f' DEFAULT {str(column[3])}'
+                elif isinstance(column[3], bool):
+                    query += f' DEFAULT {"1" if column[3] else "0"}'
+                else:
+                    query += f' DEFAULT \'{str(column[3])}\''
+            if column[4]: # Primary Key
+                query += ' PRIMARY KEY'
+            if column[5]: # Unique
+                query += ' UNIQUE'
+            query += ', '
+        query = query[:-2] + ' );'
+        dbc.execute(query)
+
+    # Acquire database cursor
+    dbc = dbh.cursor()
+
+    # Get information on what columns are in the table
+    dbr = dbc.execute(f'PRAGMA table_info({table});').fetchall()
+    if not dbr:
+        create_full_table(table, columns, dbc)
+        return
+    schema = dict()
+    for column in dbr:
+        schema[column[1]] = {
+            'type': column[2],
+            'notnull': bool(column[3]),
+            'default': column[4]
+        }
+        # Fix defaults because numbers are given as strings
+        if column[2] == 'INTEGER' and column[4] is not None:
+            schema[column[1]]['default'] = int(column[4])
+        elif column[2] == 'REAL' and column[4] is not None:
+            schema[column[1]]['default'] = float(column[4])
+
+
+    # Check what needs to be done for each column
+    for column in columns:
+        if column[0] not in schema:
+            print(f'DB: add column {column[0]} to table {table}')
+            query = f'ALTER TABLE {table} ADD "{column[0]}" {column[1]}'
+            if column[2]: # Not Null
+                query += ' NOT NULL'
+            if column[3] is not None: # Default
+                if isinstance(column[3], int) or isinstance(column[3], float):
+                    query += f' DEFAULT {str(column[3])}'
+                elif isinstance(column[3], bool):
+                    query += f' DEFAULT {"1" if column[3] else "0"}'
+                else:
+                    query += f' DEFAULT \'{str(column[3])}\''
+            if column[4]: # Primary Key
+                query += ' PRIMARY KEY'
+            if column[5]: # Unique
+                query += ' UNIQUE'
+            query += ';'
+            dbc.execute(query)
+        elif column[1] != schema[column[0]]['type']:
+            print(f'DB: {table}.{column[0]} type changed from '
+                  f'{str(schema[column[0]]["type"])} to {str(column[1])}')
+            rebuild = True
+        elif column[2] != schema[column[0]]['notnull']:
+            print(f'DB: {table}.{column[0]} not null changed from '
+                  f'{str(schema[column[0]]["notnull"])} to {str(column[2])}')
+            rebuild = True
+        elif column[3] != schema[column[0]]['default']:
+            print(f'DB: {table}.{column[0]} default value changed from '
+                  f'{str(schema[column[0]]["default"])} to {str(column[3])}')
+            rebuild = True
+
+    # Rebuild the database table, if it needs to be
+    if rebuild:
+        print(f'DB: Rebuilding table {table}, this may take awhile...')
+        create_full_table('new_' + table, columns, dbc)
+        common = list()
+        for column in columns:
+            if column[0] in schema:
+                common.append(column[0])
+        common = ', '.join(common)
+        print(f'DB: copy data from \'{table}\' table to \'new_{table}\' table')
+        dbc.execute(f'INSERT INTO new_{table} ({common}) '
+                    f'SELECT {common} FROM {table}')
+        print(f'DB: remove table \'{table}\'')
+        dbc.execute(f'DROP TABLE {table}')
+        print(f'DB: move \'new_{table}\' table to \'{table}\' table')
+        dbc.execute(f'ALTER TABLE new_{table} RENAME TO {table}')
+
+    # Check indices
+    dbr = dbc.execute(f'PRAGMA index_list({table});').fetchall()
+    schema_indices = dict()
+    for index in dbr:
+        if index[3] == 'c':
+            dbx = dbc.execute(f'PRAGMA index_info({index[1]})').fetchall()
+            schema_indices[index[1]] = {
+                'columns': [column[2] for column in dbx],
+                'unique': bool(index[2])
+            }
+    # Check for indices that need to be removed first
+    for indexname, index in schema_indices.items():
+        if indexname not in indices:
+            print('DB: remove index ' + indexname)
+            dbc.execute(f'DROP INDEX {indexname}')
+    # Check for indices that need to be added or replaced
+    for indexname, index in indices.items():
+        if indexname not in schema_indices:
+            print('DB: add index ' + indexname)
+            query = 'CREATE'
+            if index[1]:
+                query += ' UNIQUE'
+            query += f' INDEX "{indexname}" ON "{table}" ( '
+            for column in index[0]:
+                query += f'"{column}", '
+            query = query[:-2] + ' );'
+            dbc.execute(query)
+        elif index[0] != schema_indices[indexname]['columns'] or\
+             index[1] != schema_indices[indexname]['unique']:
+            print('DB: replace index ' + indexname)
+            dbc.execute(f'DROP INDEX {indexname}')
+            query = 'CREATE'
+            if index[1]:
+                query += ' UNIQUE'
+            query += f' INDEX "{indexname}" ON "{table}" ( '
+            for column in index[0]:
+                query += f'"{column}", '
+            query = query[:-2] + ' );'
+            dbc.execute(query)
+    dbh.commit()
+
+
 def create_database():
     ''' Instantiate the database if it doesn't exist, return the database
         if it does '''
@@ -261,108 +401,92 @@ def create_database():
     if tables:
         tables = [row[0] for row in tables]
     # Create the users table
-    if 'users' not in tables:
-        print('DB: Creating \'users\' table')
-        dbc.execute(
-            'CREATE TABLE "users" ( '
-            '  "id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE, '
-            '  "username" TEXT UNIQUE, '
-            '  "avgwpm" INTEGER, '
-            '  "favgwpm" REAL, '
-            '  "bestwpm" INTEGER, '
-            '  "races" INTEGER, '
-            '  "percentile" REAL, '
-            '  "skill" INTEGER, '
-            '  "experience" INTEGER, '
-            '  "signup" TEXT, '
-            '  "keyboard" TEXT, '
-            '  "premium" INTEGER, '
-            '  "name" TEXT, '
-            '  "gender" TEXT, '
-            '  "location" TEXT, '
-            '  "medals" INTEGER, '
-            '  "dailygold" INTEGER, '
-            '  "dailysilver" INTEGER, '
-            '  "dailybronze" INTEGER, '
-            '  "weeklygold" INTEGER, '
-            '  "weeklysilver" INTEGER, '
-            '  "weeklybronze" INTEGER, '
-            '  "monthlygold" INTEGER, '
-            '  "monthlysilver" INTEGER, '
-            '  "monthlybronze" INTEGER, '
-            '  "yearlygold" INTEGER, '
-            '  "yearlysilver" INTEGER, '
-            '  "yearlybronze" INTEGER, '
-            '  "totalgold" INTEGER, '
-            '  "totalsilver" INTEGER, '
-            '  "totalbronze" INTEGER, '
-            '  "picture" INTEGER, '
-            '  "points" INTEGER, '
-            '  "certwpm" INTEGER, '
-            '  "gameswon" INTEGER '
-            ');'
-        )
-        dbc.execute('CREATE INDEX "users_username" ON "users" ("username");')
-        dbh.commit()
+    create_table(
+        'users',
+        # name, type, not null, default, primary key, unique
+        [('username', 'TEXT', True, None, True, True),
+         ('avgwpm', 'REAL', False, None, False, False),
+         ('favgwpm', 'REAL', False, None, False, False),
+         ('bestwpm', 'INTEGER', False, None, False, False),
+         ('races', 'INTEGER', False, None, False, False),
+         ('percentile', 'REAL', False, None, False, False),
+         ('skill', 'INTEGER', False, None, False, False),
+         ('experience', 'INTEGER', False, None, False, False),
+         ('signup', 'TEXT', False, None, False, False),
+         ('keyboard', 'TEXT', False, None, False, False),
+         ('premium', 'INTEGER', False, None, False, False),
+         ('name', 'TEXT', False, None, False, False),
+         ('gender', 'TEXT', False, None, False, False),
+         ('location', 'TEXT', False, None, False, False),
+         ('medals', 'INTEGER', False, None, False, False),
+         ('dailygold', 'INTEGER', False, None, False, False),
+         ('dailysilver', 'INTEGER', False, None, False, False),
+         ('dailybronze', 'INTEGER', False, None, False, False),
+         ('weeklygold', 'INTEGER', False, None, False, False),
+         ('weeklysilver', 'INTEGER', False, None, False, False),
+         ('weeklybronze', 'INTEGER', False, None, False, False),
+         ('monthlygold', 'INTEGER', False, None, False, False),
+         ('monthlysilver', 'INTEGER', False, None, False, False),
+         ('monthlybronze', 'INTEGER', False, None, False, False),
+         ('yearlygold', 'INTEGER', False, None, False, False),
+         ('yearlysilver', 'INTEGER', False, None, False, False),
+         ('yearlybronze', 'INTEGER', False, None, False, False),
+         ('totalgold', 'INTEGER', False, None, False, False),
+         ('totalsilver', 'INTEGER', False, None, False, False),
+         ('totalbronze', 'INTEGER', False, None, False, False),
+         ('picture', 'INTEGER', False, None, False, False),
+         ('points', 'INTEGER', False, None, False, False),
+         ('certwpm', 'INTEGER', False, None, False, False),
+         ('gameswon', 'INTEGER', False, None, False, False),
+        ],
+        # name: [columns], unique
+        {'users_username': (['username'], False)},
+        dbh)
+
     # Create the races table
-    if 'races' not in tables:
-        print('DB: Creating \'races\' table')
-        dbc.execute(
-            'CREATE TABLE "races" ( '
-            '  "id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE, '
-            '  "username" TEXT, '
-            '  "race" INTEGER, '
-            '  "date" INTEGER, '
-            '  "speed" INTEGER, '
-            '  "accuracy" REAL, '
-            '  "rank" INTEGER, '
-            '  "players" INTEGER, '
-            '  "opponents" BLOB, '
-            '  "text" INTEGER, '
-            '  "typelog" BLOB, '
-            '  "points" INTEGER '
-            ');'
-        )
-        dbc.execute(
-            'CREATE UNIQUE INDEX "races_user_race" ON "races" ( '
-            '  "username", '
-            '  "race" '
-            ');'
-        )
-        dbh.commit()
+    create_table(
+        'races',
+        [('username', 'TEXT', True, None, False, False),
+         ('race', 'INTEGER', True, None, False, False),
+         ('date', 'INTEGER', False, None, False, False),
+         ('speed', 'INTEGER', False, None, False, False),
+         ('accuracy', 'REAL', False, None, False, False),
+         ('rank', 'INTEGER', False, None, False, False),
+         ('players', 'INTEGER', False, None, False, False),
+         ('opponents', 'BLOB', False, None, False, False),
+         ('text', 'INTEGER', False, None, False, False),
+         ('typelog', 'BLOB', False, None, False, False),
+         ('points', 'INTEGER', False, None, False, False),
+        ],
+        {'races_user_race': (['username', 'race'], True)},
+        dbh)
+
     # Create the encounters table
-    if 'encounters' not in tables:
-        print('DB: Creating \'encounters\' table')
-        dbc.execute(
-            'CREATE TABLE "encounters" ( '
-            '  "id" INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE, '
-            '  "username" TEXT, '
-            '  "opponent" TEXT, '
-            '  "matches" INTEGER, '
-            '  "wins" INTEGER, '
-            '  "losses" INTEGER '
-            ');'
-        )
-        dbc.execute(
-            'CREATE UNIQUE INDEX "encounters_unique" ON "encounters" '
-            '("username", "opponent");'
-        )
-        dbh.commit()
+    create_table(
+        'encounters',
+        [('username', 'TEXT', True, None, False, False),
+         ('opponent', 'TEXT', True, None, False, False),
+         ('matches', 'INTEGER', True, 0, False, False),
+         ('wins', 'INTEGER', True, 0, False, False),
+         ('losses', 'INTEGER', True, 0, False, False),
+        ],
+        {'encounters_unique': (['username', 'opponent'], True)},
+        dbh)
+
     # Create the user meta table
-    if 'umeta' not in tables:
-        print('DB: Creating \'umeta\' table')
-        dbc.execute(
-            'CREATE TABLE "umeta" ( '
-            '  "username" TEXT NOT NULL UNIQUE, '
-            '  "lastencounter" INTEGER DEFAULT 0, '
-            '  "lasttypelog" INTEGER DEFAULT 0, '
-            '  "normals" INTEGER DEFAULT 0, '
-            '  "practices" INTEGER DEFAULT 0, '
-            '  "ghosts" INTEGER DEFAULT 0, '
-            '  PRIMARY KEY("username") '
-            ');'
-        )
-        dbh.commit()
+    create_table(
+        'umeta',
+        [('username', 'TEXT', True, None, True, True),
+        ('lastencounter', 'INTEGER', True, 0, False, False),
+        ('lasttypelog', 'INTEGER', True, 0, False, False),
+        ('normals', 'INTEGER', True, 0, False, False),
+        ('practices', 'INTEGER', True, 0, False, False),
+        ('ghosts', 'INTEGER', True, 0, False, False),
+        ],
+        {},
+        dbh)
+
+    # All done with tables, return our nice database handle!
     return dbh
 
 
