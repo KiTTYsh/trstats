@@ -246,6 +246,9 @@ def get_race(user, race_id, session=None):
 
 def create_table(table, columns, indices, dbh, rebuild=False):
     ''' Create or update a single table in the database. '''
+    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-statements
 
     def create_full_table(table, columns, dbc):
         ''' Create a table with the specified schema from scratch. '''
@@ -256,7 +259,7 @@ def create_table(table, columns, indices, dbh, rebuild=False):
             if column[2]: # Not Null
                 query += ' NOT NULL'
             if column[3] is not None: # Default
-                if isinstance(column[3], int) or isinstance(column[3], float):
+                if isinstance(column[3], (float, int)):
                     query += f' DEFAULT {str(column[3])}'
                 elif isinstance(column[3], bool):
                     query += f' DEFAULT {"1" if column[3] else "0"}'
@@ -300,7 +303,7 @@ def create_table(table, columns, indices, dbh, rebuild=False):
             if column[2]: # Not Null
                 query += ' NOT NULL'
             if column[3] is not None: # Default
-                if isinstance(column[3], int) or isinstance(column[3], float):
+                if isinstance(column[3], (float, int)):
                     query += f' DEFAULT {str(column[3])}'
                 elif isinstance(column[3], bool):
                     query += f' DEFAULT {"1" if column[3] else "0"}'
@@ -477,11 +480,11 @@ def create_database():
     create_table(
         'umeta',
         [('username', 'TEXT', True, None, True, True),
-        ('lastencounter', 'INTEGER', True, 0, False, False),
-        ('lasttypelog', 'INTEGER', True, 0, False, False),
-        ('normals', 'INTEGER', True, 0, False, False),
-        ('practices', 'INTEGER', True, 0, False, False),
-        ('ghosts', 'INTEGER', True, 0, False, False),
+         ('lastencounter', 'INTEGER', True, 0, False, False),
+         ('lasttypelog', 'INTEGER', True, 0, False, False),
+         ('normals', 'INTEGER', True, 0, False, False),
+         ('practices', 'INTEGER', True, 0, False, False),
+         ('ghosts', 'INTEGER', True, 0, False, False),
         ],
         {},
         dbh)
