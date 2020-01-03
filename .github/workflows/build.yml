@@ -28,9 +28,9 @@ jobs:
         echo "Install Pyinstaller"
         python -m pip install pyinstaller
         echo "Run Pyinstaller"
-        pyinstaller --log-level=CRITICAL --onefile stats.py 2>&1 | %{"$_"}
+        pyinstaller --log-level=CRITICAL trstats.spec 2>&1 | %{"$_"}
     - name: Archive binary
       uses: actions/upload-artifact@v1
       with:
-        name: Windows Binary
-        path: dist/stats.exe
+        name: trstats windows
+        path: dist/trstats.exe

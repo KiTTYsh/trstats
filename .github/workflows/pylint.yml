@@ -11,4 +11,4 @@ jobs:
     - name: Python Pylint Github Action
       uses: fylein/python-pylint-github-action@v4
       with:
-        args: pip3 install -r requirements.txt && pylint stats.py
+        args: pip3 install -r requirements.txt && pylint trstats
