@@ -2,7 +2,7 @@ name: Build Windows Binary
 on: [push]
 
 jobs:
-  build:
+  build-windows:
     name: Build
     runs-on: windows-latest
     steps:

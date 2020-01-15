@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from requests import Session
 from trstats.database import Database
 from trstats import source
+from trstats.scraper import get_profile
 
 
 def main():
@@ -64,7 +65,7 @@ def main():
         target = input('Target player: ')
 
     # Download profile data for the target user, and ensure they exist
-    user = source.get_profile(target, session)
+    user = get_profile(target, session)
     if not user:
         print('User not found!')
         return
