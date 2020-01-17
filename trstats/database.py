@@ -1,8 +1,33 @@
-""" Functions to manage the database for trstats """
+"""trstats: database interaction object
+
+This module contains the Database object which is used for all communication
+with the database.  It also contains archaic functions for data storage
+and retrieval from the database.
+
+This file is part of trstats.
+
+trstats is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+trstats is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with trstats.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+# Standard library imports
 import sqlite3
 import json
 from datetime import datetime
-from . import schema
+
+# Local application imports
+from trstats import schema
+
 
 class Database():
     """ Class to handle all database interactions """

@@ -1,8 +1,30 @@
-"""trstats: user-specified commands"""
+"""trstats: user-specified commands
 
-from .database import db_get_race
-from .scraper import get_race
-from .routines import text_playback
+This module contains functions that execute user-specified commands.
+These functions are used mainly for creating custom flows based on
+command-line arguments.
+
+This file is part of trstats.
+
+trstats is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+trstats is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with trstats.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+# Local application imports
+from trstats.database import db_get_race
+from trstats.scraper import get_race
+from trstats.routines import text_playback
+
 
 def cmd_playback(user, raceid, dbh):
     """ Handles the playback argument on commandline """
