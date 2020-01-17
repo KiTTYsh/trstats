@@ -4,6 +4,7 @@ from requests import Session
 from trstats.database import Database
 from trstats import source
 from trstats.scraper import get_profile
+from trstats.output import generate_output
 
 
 def main():
@@ -87,7 +88,7 @@ def main():
     if args.encounters:
         source.calculate_encounters(user, database.dbh)
     if args.output:
-        source.generate_output(user, database.dbh)
+        generate_output(user, database.dbh)
 
 
 if __name__ == "__main__":
