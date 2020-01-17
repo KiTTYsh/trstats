@@ -1,5 +1,7 @@
 """ Functions to manage the database for trstats """
 import sqlite3
+import json
+from datetime import datetime
 from . import schema
 
 class Database():
@@ -207,3 +209,123 @@ class Table():
                 query = query[:-2] + ' );'
                 dbc.execute(query)
         self.dbh.commit()
+
+
+def db_put_user(user, dbh):
+    ''' Insert or update a user in the database '''
+    dbc = dbh.cursor()
+    dbq = (
+        user['username'], user['avgwpm'], user['favgwpm'], user['bestwpm'],
+        user['races'], user['percentile'], user['skill'], user['experience'],
+        user['signup'], user['keyboard'], user['premium'], user['name'],
+        user['gender'], user['location'], user['medals'], user['dailygold'],
+        user['dailysilver'], user['dailybronze'], user['weeklygold'],
+        user['weeklysilver'], user['weeklybronze'], user['monthlygold'],
+        user['monthlysilver'], user['monthlybronze'], user['yearlygold'],
+        user['yearlysilver'], user['yearlybronze'], user['totalgold'],
+        user['totalsilver'], user['totalbronze'], user['picture'],
+        user['points'], user['certwpm'], user['gameswon']
+    )
+    dbc.execute(
+        'INSERT OR REPLACE INTO users ( '
+        '  username, avgwpm, favgwpm, bestwpm, races, percentile, skill, '
+        '  experience, signup, keyboard, premium, name, gender, location, '
+        '  medals, dailygold, dailysilver, dailybronze, weeklygold, '
+        '  weeklysilver, weeklybronze, monthlygold, monthlysilver, '
+        '  monthlybronze, yearlygold, yearlysilver, yearlybronze, totalgold, '
+        '  totalsilver, totalbronze, picture, points, certwpm, gameswon ) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'
+        '?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',
+        dbq
+    )
+    dbh.commit()
+
+
+def db_get_user(username, dbh):
+    ''' Retrieve a user from the database '''
+    dbc = dbh.cursor()
+    dbr = dbc.execute('SELECT '
+                      '  username, '   # 0
+                      '  avgwpm, '     # 1
+                      '  favgwpm, '    # 2
+                      '  bestwpm, '    # 3
+                      '  races, '      # 4
+                      '  percentile, ' # 5
+                      '  skill, '      # 6
+                      '  experience, ' # 7
+                      '  signup '      # 8
+                      'FROM users WHERE username=?',
+                      [username]).fetchall()
+    if dbr:
+        data = dict()
+        data['username'] = dbr[0][0]
+        data['avgwpm'] = dbr[0][1]
+        data['favgwpm'] = dbr[0][2]
+        data['bestwpm'] = dbr[0][3]
+        data['races'] = dbr[0][4]
+        data['percentile'] = dbr[0][5]
+        data['skill'] = dbr[0][6]
+        data['experience'] = json.loads(dbr[0][7])
+        data['signup'] = dbr[0][8]
+        return data
+    return False
+
+
+def db_put_race(race, dbh):
+    ''' Insert or update a race in the database '''
+    dbc = dbh.cursor()
+    dbq = (
+        race['username'], race['race'], race['date'], race['speed'],
+        race['accuracy'], race['rank'], race['players'],
+        json.dumps(race['opponents']), race['text'], race['typelog']
+    )
+    dbc.execute(
+        'INSERT OR REPLACE INTO races ( '
+        '  username, race, date, speed, accuracy, rank, players, opponents, '
+        '  text, typelog ) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?);',
+        dbq
+    )
+    # dbh.commit()
+
+
+def db_get_race(user, raceid, dbh):
+    """Fetch a race from the database.
+
+    Arguments:
+        user {dictionary} -- The user profile to retrieve a race for
+        raceid {integer} -- The ID of the race to retrieve
+        dbh {sqlite3.Connection} - The connection to the database
+
+    Returns:
+        dictionary -- Details for the requested race
+    """
+    dbc = dbh.cursor()
+    dbr = dbc.execute('SELECT '
+                      '  username, '  # 0
+                      '  race, '      # 1
+                      '  date, '      # 2
+                      '  speed, '     # 3
+                      '  accuracy, '  # 4
+                      '  rank, '      # 5
+                      '  players, '   # 6
+                      '  opponents, ' # 7
+                      '  text, '      # 8
+                      '  typelog '    # 9
+                      'FROM races '
+                      'WHERE username=? AND race=?',
+                      [user['username'], raceid]).fetchall()
+    if dbr:
+        data = dict()
+        data['username'] = dbr[0][0]
+        data['race'] = dbr[0][1]
+        data['date'] = datetime.strptime(dbr[0][2], '%Y-%m-%d %H:%M:%S%z')
+        data['speed'] = dbr[0][3]
+        data['accuracy'] = dbr[0][4]
+        data['rank'] = dbr[0][5]
+        data['players'] = dbr[0][6]
+        data['opponents'] = json.loads(dbr[0][7])
+        data['text'] = dbr[0][8]
+        data['typelog'] = dbr[0][9]
+        return data
+    return False

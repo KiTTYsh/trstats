@@ -1,8 +1,15 @@
 """ Main entrypoint for running trstats as an applicaton """
+
+# Standard library imports
 from argparse import ArgumentParser
+
+# Third party imports
 from requests import Session
-from trstats.database import Database
-from trstats import source
+
+# Local application imports
+from trstats.database import Database, db_put_user
+from trstats.commands import cmd_playback, cmd_wipe_encounters
+from trstats.routines import calculate_encounters, download_races
 from trstats.scraper import get_profile
 from trstats.output import generate_output
 
@@ -73,20 +80,20 @@ def main():
 
     # Check for functional arguments
     if args.playback:
-        source.cmd_playback(user, args.playback, database.dbh)
+        cmd_playback(user, args.playback, database.dbh)
         return
     if args.wipe_encounters:
-        source.cmd_wipe_encounters(user, database.dbh)
+        cmd_wipe_encounters(user, database.dbh)
         return
 
     # Assume no functional arguments have been specified, continue normally...
     # update the user in the database, since we grabbed it already
-    source.db_put_user(user, database.dbh)
+    db_put_user(user, database.dbh)
     # Download all races currently known for the user
     if args.races:
-        source.download_races(user, database.dbh, session)
+        download_races(user, database.dbh, session)
     if args.encounters:
-        source.calculate_encounters(user, database.dbh)
+        calculate_encounters(user, database.dbh)
     if args.output:
         generate_output(user, database.dbh)
 
